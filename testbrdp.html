@@ -4,7 +4,7 @@
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>API Tester</title>
+        <title>Enhanced API Tester</title>
         <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
         <script src="https://cdn.tailwindcss.com"></script>
     </head>
@@ -25,21 +25,33 @@
             <label class="block mb-2">API URL:</label>
             <input id="apiUrl" type="text" class="w-full p-2 border rounded mb-4" placeholder="Enter API URL">
 
-            <label class="block mb-2">Request Method:</label>
-            <select id="method" class="w-full p-2 border rounded mb-4">
-                <option value="GET">GET</option>
-                <option value="POST">POST</option>
-                <option value="PUT">PUT</option>
-                <option value="DELETE">DELETE</option>
-                <option value="PATCH">PATCH</option>
-            </select>
+            <div class="flex space-x-4 mb-4">
+                <div class="w-1/2">
+                    <label class="block mb-2">Request Method:</label>
+                    <select id="method" class="w-full p-2 border rounded">
+                        <option value="GET">GET</option>
+                        <option value="POST">POST</option>
+                        <option value="PUT">PUT</option>
+                        <option value="DELETE">DELETE</option>
+                        <option value="PATCH">PATCH</option>
+                    </select>
+                </div>
+                <div class="w-1/2">
+                    <label class="block mb-2">Request Library:</label>
+                    <select id="requestLibrary" class="w-full p-2 border rounded">
+                        <option value="axios">Axios</option>
+                        <option value="fetch">Fetch API</option>
+                        <option value="curl">Curl Command</option>
+                    </select>
+                </div>
+            </div>
 
             <label class="block mb-2">Authorization Token:</label>
             <input id="token" type="text" class="w-full p-2 border rounded mb-4" placeholder="Enter token">
 
             <label class="block mb-2">Payload:</label>
             <textarea id="payload" class="w-full p-2 border rounded mb-4 resize-y overflow-auto font-mono bg-gray-100"
-                placeholder="Enter payload (JSON format)"></textarea>
+                placeholder="Enter payload (JSON format)" rows="5"></textarea>
 
             <button onclick="sendRequest()" class="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600">
                 Send Request
@@ -52,13 +64,40 @@
                     Form</button>
             </div>
 
-            <h3 class="mt-4 font-bold">Response:</h3>
+            <div class="mt-4">
+                <div class="flex justify-between items-center">
+                    <h3 class="font-bold">Response:</h3>
+                    <div id="statusContainer" class="hidden">
+                        <span id="statusBadge" class="text-white font-bold px-2 py-1 rounded"></span>
+                    </div>
+                </div>
 
-            <span id="statusBadge" class="hidden text-white font-bold px-2 py-1 rounded"></span>
+                <div class="relative">
+                    <div id="loadingIndicator"
+                        class="hidden absolute inset-0 flex items-center justify-center bg-gray-900 bg-opacity-70 rounded">
+                        <div class="text-white text-lg">
+                            <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white inline"
+                                xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
+                                    stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor"
+                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                                </path>
+                            </svg>
+                            Processing...
+                        </div>
+                    </div>
+                    <textarea id="response"
+                        class="w-full p-2 border rounded bg-gray-900 text-green-300 font-mono resize-y overflow-auto min-h-32"
+                        readonly rows="8"></textarea>
+                </div>
 
-            <textarea id="response"
-                class="w-full p-2 border rounded bg-gray-900 text-green-300 font-mono resize-y overflow-auto"
-                readonly></textarea>
+                <div id="curlCommand" class="hidden mt-4">
+                    <h3 class="font-bold mb-2">Curl Command:</h3>
+                    <div class="bg-gray-800 p-2 rounded text-white font-mono text-sm whitespace-pre-wrap break-all">
+                    </div>
+                </div>
+            </div>
         </div>
 
         <script>
@@ -67,42 +106,138 @@
                 const method = document.getElementById("method").value;
                 const token = document.getElementById("token").value;
                 const payloadText = document.getElementById("payload").value;
+                const requestLibrary = document.getElementById("requestLibrary").value;
                 const statusBadge = document.getElementById("statusBadge");
+                const statusContainer = document.getElementById("statusContainer");
+                const loadingIndicator = document.getElementById("loadingIndicator");
+                const responseArea = document.getElementById("response");
+                const curlCommandDiv = document.getElementById("curlCommand");
+
+                // Clear previous response
+                responseArea.value = "";
+                statusContainer.classList.add("hidden");
+
+                // Show loading indicator
+                loadingIndicator.classList.remove("hidden");
 
                 let payloadObject;
                 try {
                     payloadObject = payloadText ? JSON.parse(payloadText) : undefined;
                 } catch (error) {
                     alert("Invalid JSON format in Payload!");
+                    loadingIndicator.classList.add("hidden");
                     return;
                 }
 
+                // Generate curl command if selected
+                if (requestLibrary === "curl") {
+                    const curlCmd = generateCurlCommand(apiUrl, method, token, payloadObject);
+                    curlCommandDiv.querySelector("div").textContent = curlCmd;
+                    curlCommandDiv.classList.remove("hidden");
+                } else {
+                    curlCommandDiv.classList.add("hidden");
+                }
+
                 try {
-                    const response = await axios({
-                        method: method,
-                        url: apiUrl,
-                        headers: { Authorization: `Bearer ${token}` },
-                        data: payloadObject
-                    });
+                    let response;
+                    let data;
+                    let status;
 
-                    console.log(response.data);
-                    document.getElementById("response").value = JSON.stringify(response.data, null, 2);
+                    // Different implementations based on the selected library
+                    if (requestLibrary === "axios") {
+                        response = await axios({
+                            method: method,
+                            url: apiUrl,
+                            headers: token ? { Authorization: `Bearer ${token}` } : {},
+                            data: payloadObject
+                        });
 
-                    statusBadge.innerText = `Status: ${response.status}`;
-                    statusBadge.className = `block px-2 py-1 rounded ${response.status >= 200 && response.status < 300 ? 'bg-green-500' : 'bg-red-500'
-                        } text-white font-bold`;
+                        data = response.data;
+                        status = response.status;
+
+                    } else if (requestLibrary === "fetch") {
+                        const fetchOptions = {
+                            method: method,
+                            headers: {
+                                'Content-Type': 'application/json'
+                            }
+                        };
+
+                        if (token) {
+                            fetchOptions.headers.Authorization = `Bearer ${token}`;
+                        }
+
+                        if (method !== "GET" && payloadObject) {
+                            fetchOptions.body = JSON.stringify(payloadObject);
+                        }
+
+                        response = await fetch(apiUrl, fetchOptions);
+                        status = response.status;
+
+                        // Try to parse response as JSON, but fallback to text if not JSON
+                        try {
+                            data = await response.json();
+                        } catch (e) {
+                            data = await response.text();
+                        }
+                    } else if (requestLibrary === "curl") {
+                        // For curl, we can't actually execute the command from browser
+                        // We'll simulate a response based on axios
+                        response = await axios({
+                            method: method,
+                            url: apiUrl,
+                            headers: token ? { Authorization: `Bearer ${token}` } : {},
+                            data: payloadObject
+                        });
+
+                        data = response.data;
+                        status = response.status;
+                    }
+
+                    console.log(data);
+                    responseArea.value = typeof data === 'object' ? JSON.stringify(data, null, 2) : data;
+
+                    // Update status badge
+                    statusBadge.innerText = `Status: ${status}`;
+                    statusBadge.className = `text-white font-bold px-2 py-1 rounded ${status >= 200 && status < 300 ? 'bg-green-500' : 'bg-red-500'}`;
+                    statusContainer.classList.remove("hidden");
 
                     document.getElementById("secondaryButtons").classList.remove("hidden");
 
                 } catch (error) {
                     console.error(error);
-                    document.getElementById("response").value = JSON.stringify(error.response?.data || error.message, null, 2);
+                    const errorStatus = error.response?.status || 'Error';
+                    const errorData = error.response?.data || error.message;
 
-                    statusBadge.innerText = `Status: ${error.response?.status || 'Error'}`;
-                    statusBadge.className = `block px-2 py-1 rounded bg-red-500 text-white font-bold`;
+                    responseArea.value = typeof errorData === 'object' ? JSON.stringify(errorData, null, 2) : errorData;
+
+                    statusBadge.innerText = `Status: ${errorStatus}`;
+                    statusBadge.className = "text-white font-bold px-2 py-1 rounded bg-red-500";
+                    statusContainer.classList.remove("hidden");
 
                     document.getElementById("secondaryButtons").classList.remove("hidden");
+                } finally {
+                    // Hide loading indicator
+                    loadingIndicator.classList.add("hidden");
                 }
+            }
+
+            function generateCurlCommand(url, method, token, payload) {
+                let cmd = `curl -X ${method} "${url}"`;
+
+                if (token) {
+                    cmd += ` -H "Authorization: Bearer ${token}"`;
+                }
+
+                cmd += ` -H "Content-Type: application/json"`;
+
+                if (method !== "GET" && payload) {
+                    // Escape double quotes in the JSON payload
+                    const payloadStr = JSON.stringify(payload).replace(/"/g, '\\"');
+                    cmd += ` -d "${payloadStr}"`;
+                }
+
+                return cmd;
             }
 
             function exportData() {
@@ -117,6 +252,7 @@
                 const data = {
                     apiUrl: document.getElementById("apiUrl").value,
                     method: document.getElementById("method").value,
+                    requestLibrary: document.getElementById("requestLibrary").value,
                     token: document.getElementById("token").value,
                     payload: payloadObject
                 };
@@ -143,6 +279,7 @@
                     const data = JSON.parse(event.target.result);
                     document.getElementById("apiUrl").value = data.apiUrl || "";
                     document.getElementById("method").value = data.method || "GET";
+                    document.getElementById("requestLibrary").value = data.requestLibrary || "axios";
                     document.getElementById("token").value = data.token || "";
                     document.getElementById("payload").value = data.payload ? JSON.stringify(data.payload, null, 2) : "";
                 };
@@ -156,11 +293,13 @@
             function clearForm() {
                 document.getElementById("apiUrl").value = "";
                 document.getElementById("method").value = "GET";
+                document.getElementById("requestLibrary").value = "axios";
                 document.getElementById("token").value = "";
                 document.getElementById("payload").value = "";
                 document.getElementById("response").value = "";
-                document.getElementById("statusBadge").classList.add("hidden");
+                document.getElementById("statusContainer").classList.add("hidden");
                 document.getElementById("secondaryButtons").classList.add("hidden");
+                document.getElementById("curlCommand").classList.add("hidden");
             }
         </script>
     </body>
