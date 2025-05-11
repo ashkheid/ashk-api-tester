@@ -3,6 +3,8 @@
 ## Overview
 The **Ashk API Tester** is a modern, user-friendly web application designed to simplify API testing. It provides a sleek interface with advanced features to test APIs using different HTTP methods, payloads, and authentication tokens. The app supports multiple request libraries, including Axios, Fetch API, and Curl commands.
 
+![alt text](screenshot.png)
+
 ## Features
 - **API URL Input**: Easily specify the API endpoint.
 - **Request Methods**: Supports GET, POST, PUT, DELETE, and PATCH.
