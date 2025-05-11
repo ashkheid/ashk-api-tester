@@ -38,7 +38,7 @@
             <input id="token" type="text" class="w-full p-2 border rounded mb-4" placeholder="Enter token">
 
             <label class="block mb-2">Payload:</label>
-            <textarea id="payload" class="w-full p-2 border rounded mb-4 resize-y overflow-auto"
+            <textarea id="payload" class="w-full p-2 border rounded mb-4 resize-y overflow-auto font-mono bg-gray-100"
                 placeholder="Enter payload (JSON format)"></textarea>
 
             <button onclick="sendRequest()" class="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600">
@@ -56,7 +56,8 @@
 
             <span id="statusBadge" class="hidden text-white font-bold px-2 py-1 rounded"></span>
 
-            <textarea id="response" class="w-full p-2 border rounded bg-gray-50 resize-y overflow-auto"
+            <textarea id="response"
+                class="w-full p-2 border rounded bg-gray-900 text-green-300 font-mono resize-y overflow-auto"
                 readonly></textarea>
         </div>
 
@@ -65,15 +66,23 @@
                 const apiUrl = document.getElementById("apiUrl").value;
                 const method = document.getElementById("method").value;
                 const token = document.getElementById("token").value;
-                const payload = document.getElementById("payload").value;
+                const payloadText = document.getElementById("payload").value;
                 const statusBadge = document.getElementById("statusBadge");
+
+                let payloadObject;
+                try {
+                    payloadObject = payloadText ? JSON.parse(payloadText) : undefined;
+                } catch (error) {
+                    alert("Invalid JSON format in Payload!");
+                    return;
+                }
 
                 try {
                     const response = await axios({
                         method: method,
                         url: apiUrl,
                         headers: { Authorization: `Bearer ${token}` },
-                        data: payload ? JSON.parse(payload) : undefined
+                        data: payloadObject
                     });
 
                     console.log(response.data);
@@ -97,11 +106,19 @@
             }
 
             function exportData() {
+                let payloadText = document.getElementById("payload").value;
+                let payloadObject;
+                try {
+                    payloadObject = payloadText ? JSON.parse(payloadText) : {};
+                } catch (error) {
+                    payloadObject = payloadText;  // If invalid, keep it as raw text.
+                }
+
                 const data = {
                     apiUrl: document.getElementById("apiUrl").value,
                     method: document.getElementById("method").value,
                     token: document.getElementById("token").value,
-                    payload: document.getElementById("payload").value
+                    payload: payloadObject
                 };
 
                 const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
@@ -127,7 +144,7 @@
                     document.getElementById("apiUrl").value = data.apiUrl || "";
                     document.getElementById("method").value = data.method || "GET";
                     document.getElementById("token").value = data.token || "";
-                    document.getElementById("payload").value = data.payload || "";
+                    document.getElementById("payload").value = data.payload ? JSON.stringify(data.payload, null, 2) : "";
                 };
                 reader.readAsText(file);
             }
