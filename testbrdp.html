@@ -174,11 +174,15 @@
                         response = await fetch(apiUrl, fetchOptions);
                         status = response.status;
 
+                        // Clone the response before reading its body
+                        const responseClone = response.clone();
+
                         // Try to parse response as JSON, but fallback to text if not JSON
                         try {
                             data = await response.json();
                         } catch (e) {
-                            data = await response.text();
+                            // If JSON parsing fails, use the cloned response for text
+                            data = await responseClone.text();
                         }
                     } else if (requestLibrary === "curl") {
                         // For curl, we can't actually execute the command from browser
