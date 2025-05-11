@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>API Tester</title>
+        <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+        <script src="https://cdn.tailwindcss.com"></script>
+    </head>
+
+    <body class="flex items-center justify-center min-h-screen bg-gray-100">
+
+        <div class="max-w-3xl w-full p-6 bg-white shadow-lg rounded-lg">
+            <h2 class="text-xl font-bold mb-4">API Tester</h2>
+
+            <label class="block mb-2">API URL:</label>
+            <input id="apiUrl" type="text" class="w-full p-2 border rounded mb-4" placeholder="Enter API URL">
+
+            <label class="block mb-2">Request Method:</label>
+            <select id="method" class="w-full p-2 border rounded mb-4">
+                <option value="GET">GET</option>
+                <option value="POST">POST</option>
+                <option value="PUT">PUT</option>
+                <option value="DELETE">DELETE</option>
+                <option value="PATCH">PATCH</option>
+            </select>
+
+            <label class="block mb-2">Authorization Token:</label>
+            <input id="token" type="text" class="w-full p-2 border rounded mb-4" placeholder="Enter token">
+
+            <label class="block mb-2">Payload:</label>
+            <textarea id="payload" class="w-full p-2 border rounded mb-4"
+                placeholder="Enter payload (JSON format)"></textarea>
+
+            <button onclick="sendRequest()" class="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600">
+                Send Request
+            </button>
+
+            <h3 class="mt-4 font-bold">Response:</h3>
+            <textarea id="response" class="w-full p-2 border rounded bg-gray-50" readonly></textarea>
+        </div>
+
+        <script>
+            async function sendRequest() {
+                const apiUrl = document.getElementById("apiUrl").value;
+                const method = document.getElementById("method").value;
+                const token = document.getElementById("token").value;
+                const payload = document.getElementById("payload").value;
+
+                try {
+                    const response = await axios({
+                        method: method,
+                        url: apiUrl,
+                        headers: { Authorization: `Bearer ${token}` },
+                        data: payload ? JSON.parse(payload) : undefined
+                    });
+
+                    console.log(response.data);
+                    document.getElementById("response").value = JSON.stringify(response.data, null, 2);
+                } catch (error) {
+                    console.error(error);
+                    document.getElementById("response").value = JSON.stringify(error.response?.data || error.message, null, 2);
+                }
+            }
+        </script>
+    </body>
+
+</html>
