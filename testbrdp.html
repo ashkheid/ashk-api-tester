@@ -11,7 +11,7 @@
 
     <body class="flex items-center justify-center min-h-screen bg-gray-100">
 
-        <div class="max-w-3xl w-full p-6 bg-white shadow-lg rounded-lg">
+        <div class="max-w-lg w-full p-6 bg-white shadow-lg rounded-lg">
             <h2 class="text-xl font-bold mb-4">API Tester</h2>
 
             <label class="block mb-2">API URL:</label>
@@ -30,7 +30,7 @@
             <input id="token" type="text" class="w-full p-2 border rounded mb-4" placeholder="Enter token">
 
             <label class="block mb-2">Payload:</label>
-            <textarea id="payload" class="w-full p-2 border rounded mb-4"
+            <textarea id="payload" class="w-full p-2 border rounded mb-4 resize-y overflow-auto"
                 placeholder="Enter payload (JSON format)"></textarea>
 
             <button onclick="sendRequest()" class="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600">
@@ -38,7 +38,11 @@
             </button>
 
             <h3 class="mt-4 font-bold">Response:</h3>
-            <textarea id="response" class="w-full p-2 border rounded bg-gray-50" readonly></textarea>
+
+            <span id="statusBadge" class="hidden text-white font-bold px-2 py-1 rounded"></span>
+
+            <textarea id="response" class="w-full p-2 border rounded bg-gray-50 resize-y overflow-auto"
+                readonly></textarea>
         </div>
 
         <script>
@@ -47,6 +51,7 @@
                 const method = document.getElementById("method").value;
                 const token = document.getElementById("token").value;
                 const payload = document.getElementById("payload").value;
+                const statusBadge = document.getElementById("statusBadge");
 
                 try {
                     const response = await axios({
@@ -58,9 +63,19 @@
 
                     console.log(response.data);
                     document.getElementById("response").value = JSON.stringify(response.data, null, 2);
+
+                    // Update Status Badge
+                    statusBadge.innerText = `Status: ${response.status}`;
+                    statusBadge.className = `block px-2 py-1 rounded ${response.status >= 200 && response.status < 300 ? 'bg-green-500' : 'bg-red-500'
+                        } text-white font-bold`;
+
                 } catch (error) {
                     console.error(error);
                     document.getElementById("response").value = JSON.stringify(error.response?.data || error.message, null, 2);
+
+                    // Show error status code
+                    statusBadge.innerText = `Status: ${error.response?.status || 'Error'}`;
+                    statusBadge.className = `block px-2 py-1 rounded bg-red-500 text-white font-bold`;
                 }
             }
         </script>
