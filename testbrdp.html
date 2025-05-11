@@ -12,6 +12,14 @@
     <body class="flex items-center justify-center min-h-screen bg-gray-100">
 
         <div class="max-w-lg w-full p-6 bg-white shadow-lg rounded-lg">
+            <div class="flex justify-between mb-4">
+                <button onclick="exportData()"
+                    class="bg-gray-700 text-white px-4 py-2 rounded hover:bg-gray-800">Export</button>
+                <button onclick="importData()"
+                    class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Import</button>
+                <input id="importFile" type="file" class="hidden" accept=".json" onchange="handleFileImport()">
+            </div>
+
             <h2 class="text-xl font-bold mb-4">API Tester</h2>
 
             <label class="block mb-2">API URL:</label>
@@ -36,6 +44,13 @@
             <button onclick="sendRequest()" class="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600">
                 Send Request
             </button>
+
+            <div id="secondaryButtons" class="hidden flex justify-between mt-2">
+                <button onclick="openConsole()" class="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700">See
+                    Console</button>
+                <button onclick="clearForm()" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">Clear
+                    Form</button>
+            </div>
 
             <h3 class="mt-4 font-bold">Response:</h3>
 
@@ -64,19 +79,71 @@
                     console.log(response.data);
                     document.getElementById("response").value = JSON.stringify(response.data, null, 2);
 
-                    // Update Status Badge
                     statusBadge.innerText = `Status: ${response.status}`;
                     statusBadge.className = `block px-2 py-1 rounded ${response.status >= 200 && response.status < 300 ? 'bg-green-500' : 'bg-red-500'
                         } text-white font-bold`;
+
+                    document.getElementById("secondaryButtons").classList.remove("hidden");
 
                 } catch (error) {
                     console.error(error);
                     document.getElementById("response").value = JSON.stringify(error.response?.data || error.message, null, 2);
 
-                    // Show error status code
                     statusBadge.innerText = `Status: ${error.response?.status || 'Error'}`;
                     statusBadge.className = `block px-2 py-1 rounded bg-red-500 text-white font-bold`;
+
+                    document.getElementById("secondaryButtons").classList.remove("hidden");
                 }
+            }
+
+            function exportData() {
+                const data = {
+                    apiUrl: document.getElementById("apiUrl").value,
+                    method: document.getElementById("method").value,
+                    token: document.getElementById("token").value,
+                    payload: document.getElementById("payload").value
+                };
+
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+                const a = document.createElement("a");
+                a.href = URL.createObjectURL(blob);
+                a.download = "api-test-settings.json";
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            }
+
+            function importData() {
+                document.getElementById("importFile").click();
+            }
+
+            function handleFileImport() {
+                const file = document.getElementById("importFile").files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = function (event) {
+                    const data = JSON.parse(event.target.result);
+                    document.getElementById("apiUrl").value = data.apiUrl || "";
+                    document.getElementById("method").value = data.method || "GET";
+                    document.getElementById("token").value = data.token || "";
+                    document.getElementById("payload").value = data.payload || "";
+                };
+                reader.readAsText(file);
+            }
+
+            function openConsole() {
+                alert("Press `F12` or `Ctrl + Shift + I` to open Developer Console.");
+            }
+
+            function clearForm() {
+                document.getElementById("apiUrl").value = "";
+                document.getElementById("method").value = "GET";
+                document.getElementById("token").value = "";
+                document.getElementById("payload").value = "";
+                document.getElementById("response").value = "";
+                document.getElementById("statusBadge").classList.add("hidden");
+                document.getElementById("secondaryButtons").classList.add("hidden");
             }
         </script>
     </body>
