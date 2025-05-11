@@ -11,7 +11,7 @@
 
     <body class="flex items-center justify-center min-h-screen bg-gray-100">
 
-        <div class="max-w-lg w-full p-6 bg-white shadow-lg rounded-lg">
+        <div class="max-w-3xl w-full p-6 bg-white shadow-lg rounded-lg">
             <div class="flex justify-between mb-4">
                 <button onclick="exportData()"
                     class="bg-gray-700 text-white px-4 py-2 rounded hover:bg-gray-800">Export</button>
@@ -148,7 +148,10 @@
                         response = await axios({
                             method: method,
                             url: apiUrl,
-                            headers: token ? { Authorization: `Bearer ${token}` } : {},
+                            headers: {
+                                'Accept': 'application/json',
+                                ...(token ? { Authorization: `Bearer ${token}` } : {})
+                            },
                             data: payloadObject
                         });
 
@@ -159,7 +162,8 @@
                         const fetchOptions = {
                             method: method,
                             headers: {
-                                'Content-Type': 'application/json'
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json'
                             }
                         };
 
@@ -233,7 +237,7 @@
                     cmd += ` -H "Authorization: Bearer ${token}"`;
                 }
 
-                cmd += ` -H "Content-Type: application/json"`;
+                cmd += ` -H "Content-Type: application/json" -H "Accept: application/json"`;
 
                 if (method !== "GET" && payload) {
                     // Escape double quotes in the JSON payload
